@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Rcl</RootNamespace>
+    <Ros2csOutputDir>Interfaces</Ros2csOutputDir>
   </PropertyGroup>
 
 	<PropertyGroup>
@@ -43,29 +44,29 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
   </ItemGroup>
-	
-	<ItemGroup>
-		<ProjectReference Include="..\Rosidl.Runtime\Rosidl.Runtime.csproj" />
-	</ItemGroup>
 
-	<ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-		<ProjectReference Include="..\ros2cs\ros2cs.csproj">
-			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-		</ProjectReference>
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Rosidl.Runtime\Rosidl.Runtime.csproj" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<TfmSpecificPackageFile Include="build_files\Rcl.NET.props">
-			<PackagePath>build\$(TargetFramework)\</PackagePath>
-		</TfmSpecificPackageFile>
-		<TfmSpecificPackageFile Include="build_files\Rcl.NET.targets">
-			<PackagePath>build\$(TargetFramework)\</PackagePath>
-		</TfmSpecificPackageFile>
-	</ItemGroup>
+  <ItemGroup>
+    <None Include="build\Rcl.NET.props" Pack="True" PackagePath="build" Visible="False" />
+    <None Include="build\Rcl.NET.targets" Pack="True" PackagePath="build" Visible="False" />
+  </ItemGroup>
 
-	<Import Project="build_files\gen.ros2cs.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\ros2cs\ros2cs.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
 
-	<Import Project="build_files\Rcl.NET.props" />
-	<Import Project="build_files\Rcl.NET.targets" />
+  <Import Project="build\ros2cs.targets" />
+  <Import Project="build\Rcl.NET.props" />
+  <Import Project="build\Rcl.NET.targets" />
 
+  <ItemGroup Condition="'$(_IsPacking)' == 'true'">
+    <None Include="$(MSBuildProjectDirectory)\..\ros2cs\bin\$(Configuration)\net6.0\publish\*"
+      Pack="True"
+      PackagePath="tools\net6.0\ros2cs\"/>
+  </ItemGroup>
 </Project>

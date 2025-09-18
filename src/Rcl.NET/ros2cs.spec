@@ -2,11 +2,10 @@
 # ros2cs this file on humble and manually make a backward
 # compatible copy of ParameterDescriptor and friends is required.
 
-output ./Interfaces
-
 internal
 
-from-ament-index
+from-directory ../../modules/rcl_interfaces
+from-directory ../../modules
 
 include rcl_interfaces
 include action_msgs

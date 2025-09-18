@@ -116,8 +116,6 @@ namespace Rosidl.Runtime.Interop
         public unsafe static string? CreatePooledString(byte* buffer, int length)
             => CreatePooledString(buffer, length, Encoding.UTF8);
 
-
-
         /// <summary>
         /// Creates a pooled string from specified unmanaged string buffer.
         /// </summary>
@@ -165,5 +163,96 @@ namespace Rosidl.Runtime.Interop
         /// </returns>
         public unsafe static string? CreatePooledString(sbyte* buffer, int length)
             => CreatePooledString((byte*)buffer, length);
+
+        /// <summary>
+        /// Creates a string from specified unmanaged string buffer with specified encoding.
+        /// </summary>
+        /// <param name="buffer">The string buffer to be decoded.</param>
+        /// <param name="encoding">Encoding of the string.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer.
+        /// </returns>
+        public unsafe static string CreateString(ReadOnlySpan<byte> buffer, Encoding encoding)
+        {
+            if (buffer.IsEmpty) return string.Empty;
+            return encoding.GetString(buffer);
+        }
+
+        /// <summary>
+        /// Creates a string from specified unmanaged string buffer with specified encoding.
+        /// </summary>
+        /// <param name="buffer">The string buffer to be decoded.</param>
+        /// <param name="encoding">Encoding of the string.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer.
+        /// </returns>
+        public unsafe static string CreateString(ReadOnlySpan<sbyte> buffer, Encoding encoding)
+        {
+            return CreateString(buffer.AsBytes(), encoding);
+        }
+
+        /// <summary>
+        /// Creates a string from specified unmanaged string buffer with UTF-8 encoding.
+        /// </summary>
+        /// <param name="buffer">The string buffer to be decoded.</param>
+        /// <param name="length">Length of the string buffer in bytes.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer if <paramref name="buffer"/> is not <see langword="null"/>.
+        /// Otherwise, <see langword="null"/>.
+        /// </returns>
+        public unsafe static string? CreateString(byte* buffer, int length)
+        {
+            if (buffer == null) return null;
+
+            var span = new Span<byte>(buffer, length);
+            return CreateString(span, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Creates a string from specified unmanaged string buffer with UTF-8 encoding.
+        /// </summary>
+        /// <param name="buffer">The string buffer to be decoded.</param>
+        /// <param name="length">Length of the string buffer in bytes.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer if <paramref name="buffer"/> is not <see langword="null"/>.
+        /// Otherwise, <see langword="null"/>.
+        /// </returns>
+        public unsafe static string? CreateString(sbyte* buffer, int length)
+        {
+            return CreateString((byte*)buffer, length);
+        }
+
+        /// <summary>
+        /// Creates a string from specified unmanaged string buffer.
+        /// </summary>
+        /// <param name="buffer">A null terminated string buffer.</param>
+        /// <param name="encoding">Encoding of the input buffer, defaults to <see cref="Encoding.UTF8"/>.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer if <paramref name="buffer"/> is not <see langword="null"/>.
+        /// Otherwise, <see langword="null"/>.
+        /// </returns>
+        public unsafe static string? CreateString(byte* buffer, Encoding? encoding = null)
+        {
+            if (buffer == null) return null;
+
+            var len = 0;
+            while (buffer[len] != 0) len++;
+
+            var span = new Span<byte>(buffer, len);
+            return (encoding ?? Encoding.UTF8).GetString(span);
+        }
+
+        /// <summary>
+        /// Creates a string from specified UTF-16 character buffer.
+        /// </summary>
+        /// <param name="buffer">The string buffer to be decoded.</param>
+        /// <returns>
+        /// A string instance matching the content of the input buffer.
+        /// </returns>
+        public unsafe static string CreateString(ReadOnlySpan<char> buffer)
+        {
+            if (buffer.IsEmpty) return string.Empty;
+            return new string(buffer);
+        }
     }
 }

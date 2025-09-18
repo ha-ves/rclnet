@@ -15,6 +15,7 @@ jobs:
           - foxy
           - humble
           - iron
+          - jazzy
         include:
           - ros_distribution: foxy
             docker_image: ros:foxy-ros-base
@@ -22,10 +23,14 @@ jobs:
             docker_image: ros:humble-ros-base
           - ros_distribution: iron
             docker_image: ros:iron-ros-base
+          - ros_distribution: jazzy
+            docker_image: ros:jazzy-ros-base
     container:
       image: ${{ matrix.docker_image }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
 
       - name: Install additional ROS dependencies
         run: |
@@ -37,6 +42,11 @@ jobs:
           apt install -y curl
           rosdep update --include-eol-distros
           rosdep install -i -y --from-paths src/Rcl.NET.Tests
+
+      - name: Setup .NET 6.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
 
       - name: Setup .NET 7.0
         uses: actions/setup-dotnet@v3
@@ -66,7 +76,7 @@ jobs:
           ROS_LOCALHOST_ONLY: 0
         run: |
           . /opt/ros/${{ matrix.ros_distribution }}/setup.sh
-          dotnet test -c Release --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m 
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
 
       - name: Test (cyclonedds)
         working-directory: src/Rcl.NET.Tests
@@ -75,7 +85,7 @@ jobs:
           ROS_LOCALHOST_ONLY: 0
         run: |
           . /opt/ros/${{ matrix.ros_distribution }}/setup.sh
-          dotnet test -c Release --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
 
   windows:
     runs-on: windows-latest
@@ -86,22 +96,41 @@ jobs:
           - foxy
           - humble
           - iron
+          - jazzy
         include:
+          - ros_distribution: jazzy
+            ros_archive: https://github.com/ros2/ros2/releases/download/release-jazzy-20250820/ros2-jazzy-20250820-windows-release-amd64.zip
+            is_legacy_distro: false
           - ros_distribution: iron
-            ros_archive: https://github.com/ros2/ros2/releases/download/release-iron-20230717/ros2-iron-20230717-windows-release-amd64.zip
+            ros_archive: https://github.com/ros2/ros2/releases/download/release-iron-20241204/ros2-iron-20241204-windows-release-amd64.zip
+            is_legacy_distro: true
           - ros_distribution: humble
-            ros_archive: https://github.com/ros2/ros2/releases/download/release-humble-20230724/ros2-humble-20230724-windows-release-amd64.zip
+            ros_archive: https://github.com/ros2/ros2/releases/download/release-humble-20241205/ros2-humble-20241205-windows-release-amd64.zip
+            is_legacy_distro: true
           - ros_distribution: foxy
             ros_archive: https://github.com/ros2/ros2/releases/download/release-foxy-20230620/ros2-foxy-20230620-windows-release-amd64.zip
+            is_legacy_distro: true
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
   
-      - name: Install dependencies
+      - name: Install dependencies (Legacy)
+        if: ${{ matrix.is_legacy_distro }}
         run: |
           reg add HKCU\SOFTWARE\Kitware\CMake /f
           Invoke-WebRequest -Uri https://github.com/ros2/choco-packages/releases/download/2022-03-15/tinyxml2.6.0.0.nupkg -OutFile tinyxml2.6.0.0.nupkg
           choco install --limit-output --no-progress -y -s . tinyxml2
-          choco install --limit-output --no-progress -y openssl
+          choco install --limit-output --no-progress -y openssl --version 1.1.1.2100
+
+      - name: Install dependencies
+        if: ${{ !matrix.is_legacy_distro }}
+        run: |
+          Set-ExecutionPolicy ByPass
+          irm -useb https://pixi.sh/install.ps1 | iex
+          irm https://raw.githubusercontent.com/ros2/ros2/refs/heads/jazzy/pixi.toml -OutFile pixi.toml
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+          pixi install
 
       - name: Restore cached ROS installation
         id: ros-cache
@@ -115,6 +144,11 @@ jobs:
         run: |
           Invoke-WebRequest -Uri ${{ matrix.ros_archive }} -OutFile ros2-release.zip
           Expand-Archive -Path ros2-release.zip c:/dev/${{ matrix.ros_distribution }}
+
+      - name: Setup .NET 6.0
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.0.x
 
       - name: Setup .NET 7.0
         uses: actions/setup-dotnet@v3
@@ -137,21 +171,55 @@ jobs:
           dotnet nuget locals all --clear
           dotnet build -c Release
 
-      - name: Test (fastrtps)
+      - name: Test (fastrtps) (Legacy)
+        if: ${{ matrix.is_legacy_distro }}
         shell: cmd
         working-directory: src/Rcl.NET.Tests
         env:
           RMW_IMPLEMENTATION: rmw_fastrtps_cpp
           ROS_LOCALHOST_ONLY: 0
-        run: refreshenv && c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat && dotnet test -c Release --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
+        run: |
+          refreshenv
+          call c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
 
-      - name: Test (cyclonedds)
+      - name: Test (cyclonedds) (Legacy)
+        if: ${{ matrix.is_legacy_distro }}
         shell: cmd
         working-directory: src/Rcl.NET.Tests
         env:
           RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
           ROS_LOCALHOST_ONLY: 0
-        run: refreshenv && c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat && dotnet test -c Release --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
+        run: |
+          refreshenv
+          call c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
+
+      - name: Test (fastrtps)
+        if: ${{ !matrix.is_legacy_distro }}
+        shell: cmd
+        working-directory: src/Rcl.NET.Tests
+        env:
+          RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+          ROS_LOCALHOST_ONLY: 0
+        run: |
+          refreshenv
+          pixi shell
+          call c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
+
+      - name: Test (cyclonedds)
+        if: ${{ !matrix.is_legacy_distro }}
+        shell: cmd
+        working-directory: src/Rcl.NET.Tests
+        env:
+          RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+          ROS_LOCALHOST_ONLY: 0
+        run: |
+          refreshenv
+          pixi shell
+          call c:/dev/${{ matrix.ros_distribution }}/ros2-windows/setup.bat
+          dotnet test -c Release -p:BuildInParallel=false --no-build --verbosity normal --blame-crash-dump-type mini --blame-hang-dump-type none --blame-hang-timeout 1m
 
   #test_macos:
   #  runs-on: macos-latest

@@ -475,6 +475,7 @@ public class CSharpCodeGenerator
         {
             foreach (var msg in cand.Messages)
             {
+                if (msg.Path.EndsWith(".json")) continue;
                 var metadata = parser.Parse(cand.Name, msg.Name, File.ReadAllText(msg.Path), msg.SubFolder);
                 msg.Metadata = metadata;
                 if (metadata is MessageMetadata m)
