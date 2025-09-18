@@ -1,0 +1,53 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Target Name="CheckIsPackingSingleTfm" BeforeTargets="DispatchToInnerBuilds" Condition="'$(IsPackingSingleTfm)' == 'true'">
+		<Error Condition="'$(DesiredTfm)' == ''"
+			   Text="When packing a single TFM, you must specify TargetFramework property, e.g., /p:TargetFramework=net8.0" />
+	</Target>
+	
+	<Target Name="_ExcludeTargetFramework" AfterTargets="_GetTargetFrameworksOutput" BeforeTargets="_WalkEachTargetPerFramework"
+			Condition="'$(DesiredTfm)' != '' AND '$(IsPackingSingleTfm)' == 'true'">
+		<ItemGroup>
+			<_FrameworksWithSuppressedDependencies Include="@(_TargetFrameworks)" Condition="'%(_TargetFrameworks.Identity)' != '$(DesiredTfm)'" />
+			<_TargetFrameworks Remove="@(_TargetFrameworks)" Condition="'%(_TargetFrameworks.Identity)' != '$(DesiredTfm)'" />
+		</ItemGroup>
+
+		<PropertyGroup>
+			<!-- Extract digit after 'net' and before the dot (e.g., 'net8.0' -> '8') -->
+			<TfmMajor>$([System.Text.RegularExpressions.Regex]::Match('$(DesiredTfm)', '^net(\d+)').Groups[1].Value)</TfmMajor>
+			<PackageVersion Condition="'$(TfmMajor)' != ''">$(TfmMajor).$(Version)</PackageVersion>
+		</PropertyGroup>
+		<Message Importance="high" Text="Removed TargetFrameworks: @(_FrameworksWithSuppressedDependencies, ', '); Remaining TargetFramework: @(_TargetFrameworks, ', '); PackageVersion: $(PackageVersion)" />
+	</Target>
+	
+	
+
+	<PropertyGroup>
+		<GetRos2csPropsDependsOn>
+			$(GetRos2csPropsDependsOn);Get_ros2cs
+		</GetRos2csPropsDependsOn>
+	</PropertyGroup>
+	<Target Name="Get_ros2cs" >
+
+		<MSBuild Projects="$(MSBuildThisFileDirectory)\ros2cs\ros2cs.csproj"
+		  		 Targets="Publish"
+		  		 Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);Version=$(Version)"
+				/>
+
+		<PropertyGroup>
+			<Ros2csDir>$(MSBuildThisFileDirectory)\ros2cs\bin\$(Configuration)\$(TargetFramework)\publish</Ros2csDir>
+			<Ros2csExe>$(Ros2csDir)\ros2cs.dll</Ros2csExe>
+		</PropertyGroup>
+
+		<Error Condition="!Exists('$(Ros2csExe)')"
+			   Code="CI0001" File="$(MSBuildThisFileDirectory)\ros2cs\ros2cs.csproj"
+			   Text="ros2cs executable not found. This is not CI build, build 'ros2cs' first."/>
+
+		<Message Text="Using ros2cs from $(Ros2csExe)"/>
+
+		<ItemGroup>
+			<None Include="$(Ros2csDir)\*" Pack="true" PackagePath="tools\$(TargetFramework)\ros2cs" />
+		</ItemGroup>
+	</Target>
+
+</Project>
