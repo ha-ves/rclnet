@@ -49,12 +49,6 @@
     <ProjectReference Include="..\Rosidl.Runtime\Rosidl.Runtime.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ros2cs\ros2cs.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
-
   <Import Project="build\Rcl.NET.props" />
 	<!-- TODO: only generate changed interface packages, 
 				because generating many packages can take considerably long time,

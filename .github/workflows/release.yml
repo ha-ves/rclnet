@@ -23,8 +23,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        tfm: [net8.0, net9.0]
-    name: "${{ github.event.inputs.release-type || (github.event.release.prerelease && 'Pre-release') || 'Release' }} on ${{ matrix.os }} ${{ matrix.tfm }}"
+    name: "${{ github.event.inputs.release-type || (github.event.release.prerelease && 'Pre-release') || 'Release' }} on ${{ matrix.os }}"
     environment: "${{ github.event.inputs.release-type == 'prerelease' || github.event.release.prerelease && 'Pre-release' || 'Release' }}"
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,6 +35,12 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
+
+      - name: Dotnet Restore
+        run: |
+          dotnet restore templates/
+          dotnet restore src/rclnet.sln
+          dotnet restore src/ros2cs.sln
           
       - name: Update Template Package Reference
         working-directory: templates/templates
@@ -43,9 +48,9 @@ jobs:
 
       - name: Package Projects
         run: |
-          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -p:IsPackingSingleTfm=true -p:TargetFramework=${{ matrix.tfm }} -o bin/ src/Rosidl.Runtime                                                                                                      
-          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -p:IsPackingSingleTfm=true -p:TargetFramework=${{ matrix.tfm }} -o bin/ src/Rcl.NET                                                                                                             
-          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -p:IsPackingSingleTfm=true -p:TargetFramework=${{ matrix.tfm }} -o bin/ src/ros2cs
+          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -o bin/ src/Rosidl.Runtime
+          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -o bin/ src/Rcl.NET
+          dotnet pack -p:Version=${GITHUB_REF#refs/tags/v} -c Release -o bin/ src/ros2cs
       
       - name: Upload packages to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')

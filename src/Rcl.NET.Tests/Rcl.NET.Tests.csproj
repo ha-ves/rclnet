@@ -28,15 +28,11 @@
     <ProjectReference Include="..\Rcl.NET\Rcl.NET.csproj" />
   </ItemGroup>
 
-	<Import Project="..\Rcl.NET\build_files\gen.ros2cs.targets"/>
-	<Import Project="..\Rcl.NET\build_files\Rcl.NET.props"/>
-	<Import Project="..\Rcl.NET\build_files\Rcl.NET.targets"/>
+	<Import Project="..\Rcl.NET\build\Rcl.NET.props"/>
+	<Import Project="..\Rcl.NET\build\Rcl.NET.targets"/>
 
   <ItemGroup>
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildProjectDirectory)\..\Rcl.NET\build\Rcl.NET.targets" />
-  <Import Project="$(MSBuildProjectDirectory)\..\Rcl.NET\build\Rcl.NET.props" />
-  <Import Project="$(MSBuildProjectDirectory)\..\Rcl.NET\build\ros2cs.targets" />
 </Project>

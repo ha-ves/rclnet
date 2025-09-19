@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<Ros2csOutputDir Condition="$(Ros2csOutputDir) == ''">Ros2csGeneratedInterfaces</Ros2csOutputDir>
+		<Ros2csInstallArgs Condition="'$(Ros2csInstallArgs)' == ''">--create-manifest-if-needed</Ros2csInstallArgs>
 	</PropertyGroup>
 	
 	<ItemGroup>

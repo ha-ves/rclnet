@@ -27,36 +27,27 @@
 			<Version Condition="'$(TfmMajor)' != ''">$(TfmMajor).$(Version)</Version>
 			<PackageVersion>$(Version)</PackageVersion>
 		</PropertyGroup>
+
+		<!--<PropertyGroup Condition="'$(IsPackingSingleTfm)' == 'true'">
+			<PackageId Condition="'$(PackageId)' != ''">$(PackageId).Single</PackageId>
+		</PropertyGroup>-->
 	</Target>
 
 
-		<PropertyGroup>
-		<GetRos2csPropsDependsOn>
-			$(GetRos2csPropsDependsOn);Get_ros2cs
-		</GetRos2csPropsDependsOn>
-	</PropertyGroup>
-	<Target Name="Get_ros2cs" >
+
+	<Target Name="Get_ros2cs" BeforeTargets="$(GetRos2csPropsDependsOn)">
 
 		<MSBuild Projects="$(MSBuildThisFileDirectory)\ros2cs\ros2cs.csproj"
 		  		 Targets="Publish"
-		  		 Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);Version=$(Version)"
+		  		 Properties="Configuration=$(Configuration);TargetFramework=$(Ros2csFramework);Version=$(Version)"
 				/>
 
 		<PropertyGroup>
-			<Ros2csDir>$(MSBuildThisFileDirectory)\ros2cs\bin\$(Configuration)\$(TargetFramework)\publish</Ros2csDir>
-			<Ros2csExe>$(Ros2csDir)\ros2cs.dll</Ros2csExe>
+			<Ros2csDir>$(MSBuildThisFileDirectory)\ros2cs\bin\$(Configuration)\$(Ros2csFramework)\publish</Ros2csDir>
+			<Ros2csExe>&quot;$(Ros2csDir)\ros2cs.dll&quot;</Ros2csExe>
 		</PropertyGroup>
 
-		<Error Condition="!Exists('$(Ros2csExe)')"
-			   Code="CI0001" File="$(MSBuildThisFileDirectory)\ros2cs\ros2cs.csproj"
-			   Text="ros2cs executable not found. This is not CI build, build 'ros2cs' first."/>
-
 		<Message Text="Using ros2cs from $(Ros2csExe)"/>
-
-		<ItemGroup>
-			<None Include="$(Ros2csDir)\*.dll" Pack="true" PackagePath="tools\$(TargetFramework)\ros2cs" />
-			<None Include="$(Ros2csDir)\*.json" Pack="true" PackagePath="tools\$(TargetFramework)\ros2cs" />
-		</ItemGroup>
 	</Target>
 
 </Project>
